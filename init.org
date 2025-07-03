@@ -1,62 +1,28 @@
 * Packages
 #+BEGIN_SRC emacs-lisp :tangle yes
-  (require 'package)
-  (add-to-list 'package-archives
-  	     '("melpa" . "https://melpa.org/packages/"))
+(require 'package)
+(add-to-list 'package-archives
+      	     '("melpa" . "https://melpa.org/packages/"))
 
-  (use-package ivy
-    :config
-    (ivy-mode t)
-    (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
-    (setq ivy-use-virtual-buffers t)
-    (setq ivy-count-format "(%d/%d) "))
-
-  (use-package swiper
-    :config
-
-    ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
-    (defun my-swiper-isearch-again ()
-      "Start swiper-isearch with the last thing searched for."
-      (interactive)
-      (swiper-isearch (car swiper-history)))
-
-    (global-set-key (kbd "C-s") 'swiper-isearch)
-    (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
-
-
-#+END_SRC
-* Defuns
-#+BEGIN_SRC emacs-lisp :tangle yes
-(defun perlmutter ()
-  (interactive "")
-  (find-file "/ssh:perlmutter:"))
-#+END_SRC
-* Theme
-#+BEGIN_SRC emacs-lisp :tangle yes
-(use-package solarized-theme
+(use-package ivy
   :config
-      (setq solarized-use-variable-pitch nil)
-      (setq solarized-scale-org-headlines nil)
-      (load-theme 'solarized-light t)
-      (tool-bar-mode -1)
-      (menu-bar-mode -1)
-      (scroll-bar-mode -1)
-      (setq inhibit-startup-screen t)
-      (setq resize-mini-windows t)
-      (add-hook 'focus-in-hook
-	    (lambda ()
-	      ;; (set-frame-font (font-spec :size 27 :name "Inconsolata" :weight 'medium) nil t)
-	      (set-frame-font (font-spec :size 20 :name "Inconsolata") nil t)
-	      (set-fontset-font "fontset-default" 'unicode (font-spec :size 13 :name "Source Code Pro")))))
-#+END_SRC
+  (ivy-mode t)
+  (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) "))
 
-* LaTeX
-#+BEGIN_SRC emacs-lisp :tangle yes
-(use-package auctex)
-#+END_SRC
+(use-package swiper
+  :config
 
-* Magit
-#+BEGIN_SRC emacs-lisp :tangle yes
+  ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
+  (defun my-swiper-isearch-again ()
+    "Start swiper-isearch with the last thing searched for."
+    (interactive)
+    (swiper-isearch (car swiper-history)))
+
+  (global-set-key (kbd "C-s") 'swiper-isearch)
+  (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
+
 (use-package magit
   :config
   (global-set-key (kbd "C-c g") 'magit-status)
@@ -67,11 +33,162 @@
   (advice-add 'magit-turn-on-auto-revert-mode-if-desired
 	      :around
 	      #'my-magit-auto-revert-mode-advice))
+
+
+(use-package cmake-mode)
+(use-package csv-mode)
+(use-package markdown-mode)
+(use-package vlf)
+(use-package yaml-mode)
+(use-package auctex)
+
 #+END_SRC
+* Defuns
+
+#+BEGIN_SRC emacs-lisp :tangle yes
+  ;; Frequet ssh connections
+  (defun perlmutter ()
+    (interactive "")
+    (find-file "/ssh:perlmutter:"))
+  (defun lxplus ()
+    (interactive "")
+    (find-file "/ssh:lxplus:"))
+
+(defun find-init.org ()
+  (interactive "")
+  (find-file "~/.emacs.d/init.org"))
+
+;; https://www.emacswiki.org/emacs/UnfillParagraph
+;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+(defun unfill-paragraph (&optional region)
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive (progn (barf-if-buffer-read-only) '(t)))
+  (let ((fill-column (point-max))
+	;; This would override `fill-column' if it's an integer.
+	(emacs-lisp-docstring-fill-column t))
+    (fill-paragraph nil region)))
+
+(defun C-u_M-x_shell ()
+  "Command for prefixed invokation of `shell'"
+  (interactive "")
+  (let ((ido-mode-p ido-mode))
+    (if ido-mode-p
+	(ido-mode -1))
+    (let ((current-prefix-arg '(4)))
+      (call-interactively #'shell))
+    (if ido-mode-p
+	(ido-mode t))))
+
+  
+  #+END_SRC
+* Key bindings
+#+BEGIN_SRC emacs-lisp :tangle yes
+(defun C-c-commands (cmd-alist)
+  (dolist (pair cmd-alist)
+    (global-set-key (kbd (concat "C-c " (car pair)))
+		    (cdr pair))))
+
+;; WARNING: now set other C-c command in use-package forms
+(C-c-commands
+ '(("i" . find-init.org)
+   ("m" . man)
+   ("q" . unfill-paragraph)
+   ("r" . replace-string)
+   ("s" . C-u_M-x_shell)))
+
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-unset-key (kbd "C-z"))
+#+END_SRC
+
+* Theme
+#+BEGIN_SRC emacs-lisp :tangle yes
+(use-package solarized-theme
+  :config
+      (setq solarized-use-variable-pitch nil)
+      (setq solarized-scale-org-headlines nil)
+      (load-theme 'solarized-light t)
+      (tool-bar-mode -1)
+      ; (menu-bar-mode -1)
+      (scroll-bar-mode -1)
+      (setq inhibit-startup-screen t)
+      (setq resize-mini-windows t)
+      (add-hook 'focus-in-hook
+	    (lambda ()
+	      ;; (set-frame-font (font-spec :size 27 :name "Inconsolata" :weight 'medium) nil t)
+	      (set-frame-font (font-spec :size 20 :name "Inconsolata") nil t)
+	      (set-fontset-font "fontset-default" 'unicode (font-spec :size 13 :name "Source Code Pro")))))
+#+END_SRC
+* Programming
+#+BEGIN_SRC emacs-lisp :tangle yes
+(setq common-programming-hook
+      (lambda ()
+      	(setq display-line-numbers t)
+      	(column-number-mode)
+      	(show-paren-mode)))
+
+(add-hook 'python-mode-hook common-programming-hook)
+(add-hook 'emacs-lisp-mode-hook common-programming-hook)
+(add-hook 'sh-mode-hook common-programming-hook)
+(add-hook 'rust-mode-hook common-programming-hook)
+(add-hook 'c-mode-hook common-programming-hook)
+(add-hook 'c++-mode-hook common-programming-hook)
+
+(setq c-default-style '((c++-mode . "stroustrup")
+    			(other . "linux")))
+(setq c-basic-offset 4)
+(add-to-list 'auto-mode-alist '("\\.ipp\\'" . c++-mode))
+
+(setq my-cc-mode-hook (lambda () (c-set-offset 'innamespace 0)))
+(add-hook 'c++-mode-hook my-cc-mode-hook)
+#+END_SRC
+
 * Divers
 #+BEGIN_SRC emacs-lisp :tangle yes
+(setq async-shell-command-display-buffer nil)
+(setq comint-input-ignoredups t)
+(setq comint-password-prompt-regexp
+      (concat comint-password-prompt-regexp "\\|pass phrase\\|the password\\+OTP\\|Password"))
+(setq compilation-scroll-output t)
+(setq confirm-kill-processes nil)
+(setq custom-file "~/.emacs.d/custom.el")
+
+(add-to-list 'backup-directory-alist '("." . "/home/glg/.emacs.d/backup"))
+(setq delete-old-versions t)
+(setq kept-new-versions 3)
+(setq kept-old-versions 0)
+(setq make-backup-files t)
+
 (setq dired-listing-switches "-lh")
+(setq doc-view-resolution 300) ; default is 100
+(setq explicit-shell-file-name "/bin/bash") ;; For TRAMP
+(setq highlight-nonselected-windows t)
+
+(setq ring-bell-function
+      (lambda ()
+      	(invert-face 'mode-line)
+      	(run-with-timer 0.1 nil 'invert-face 'mode-line)))
+
+(setq search-default-mode t) ;; sets regexp search
+(setq version-control t)
+
+(add-hook 'compilation-minor-mode-hook
+  	  (lambda () (hl-line-mode)))
+
 (setq ns-right-option-modifier 'control)
 (delete-selection-mode)
-(global-unset-key (kbd "C-z"))
+(display-battery-mode t)
+(display-time-mode t)
+(remove-hook 'find-file-hook 'vc-find-file-hook)
+(put 'set-goal-column 'disabled nil)
+(show-paren-mode t)
+(size-indication-mode)
+
+;; Speedup TRAMP over slow connections
+(setq vc-follow-symlinks nil)
+(defun my-vc-off-if-remote ()
+  (if (file-remote-p (buffer-file-name))
+      (setq-local vc-handled-backends nil)))
+(add-hook 'find-file-hook 'my-vc-off-if-remote)
+;; this inhibits .#<...> lock files
+(setq remote-file-name-inhibit-locks t)
 #+END_SRC
