@@ -160,7 +160,6 @@
 
 (setq dired-listing-switches "-lh")
 (setq doc-view-resolution 300) ; default is 100
-(setq explicit-shell-file-name "/bin/bash") ;; For TRAMP
 (setq highlight-nonselected-windows t)
 
 (setq ring-bell-function
