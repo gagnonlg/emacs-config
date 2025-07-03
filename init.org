@@ -152,7 +152,7 @@
 (setq confirm-kill-processes nil)
 (setq custom-file "~/.emacs.d/custom.el")
 
-(add-to-list 'backup-directory-alist '("." . "/home/glg/.emacs.d/backup"))
+(add-to-list 'backup-directory-alist '("." . "/Users/gagnonlg/.emacs.d/backup"))
 (setq delete-old-versions t)
 (setq kept-new-versions 3)
 (setq kept-old-versions 0)
