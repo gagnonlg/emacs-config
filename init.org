@@ -91,7 +91,7 @@
 ;; WARNING: now set other C-c command in use-package forms
 (C-c-commands
  '(("i" . find-init.org)
-   ("m" . man)
+   ("m" . woman)
    ("q" . unfill-paragraph)
    ("r" . replace-string)
    ("s" . C-u_M-x_shell)))
