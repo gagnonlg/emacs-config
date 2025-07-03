@@ -1,0 +1,77 @@
+* Packages
+#+BEGIN_SRC emacs-lisp :tangle yes
+  (require 'package)
+  (add-to-list 'package-archives
+  	     '("melpa" . "https://melpa.org/packages/"))
+
+  (use-package ivy
+    :config
+    (ivy-mode t)
+    (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
+    (setq ivy-use-virtual-buffers t)
+    (setq ivy-count-format "(%d/%d) "))
+
+  (use-package swiper
+    :config
+
+    ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
+    (defun my-swiper-isearch-again ()
+      "Start swiper-isearch with the last thing searched for."
+      (interactive)
+      (swiper-isearch (car swiper-history)))
+
+    (global-set-key (kbd "C-s") 'swiper-isearch)
+    (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
+
+
+#+END_SRC
+* Defuns
+#+BEGIN_SRC emacs-lisp :tangle yes
+(defun perlmutter ()
+  (interactive "")
+  (find-file "/ssh:perlmutter:"))
+#+END_SRC
+* Theme
+#+BEGIN_SRC emacs-lisp :tangle yes
+(use-package solarized-theme
+  :config
+      (setq solarized-use-variable-pitch nil)
+      (setq solarized-scale-org-headlines nil)
+      (load-theme 'solarized-light t)
+      (tool-bar-mode -1)
+      (menu-bar-mode -1)
+      (scroll-bar-mode -1)
+      (setq inhibit-startup-screen t)
+      (setq resize-mini-windows t)
+      (add-hook 'focus-in-hook
+	    (lambda ()
+	      ;; (set-frame-font (font-spec :size 27 :name "Inconsolata" :weight 'medium) nil t)
+	      (set-frame-font (font-spec :size 20 :name "Inconsolata") nil t)
+	      (set-fontset-font "fontset-default" 'unicode (font-spec :size 13 :name "Source Code Pro")))))
+#+END_SRC
+
+* LaTeX
+#+BEGIN_SRC emacs-lisp :tangle yes
+(use-package auctex)
+#+END_SRC
+
+* Magit
+#+BEGIN_SRC emacs-lisp :tangle yes
+(use-package magit
+  :config
+  (global-set-key (kbd "C-c g") 'magit-status)
+
+  (defun my-magit-auto-revert-mode-advice (orig-fun &rest args)
+    (unless (and buffer-file-name (file-remote-p buffer-file-name))
+      (apply orig-fun args)))
+  (advice-add 'magit-turn-on-auto-revert-mode-if-desired
+	      :around
+	      #'my-magit-auto-revert-mode-advice))
+#+END_SRC
+* Divers
+#+BEGIN_SRC emacs-lisp :tangle yes
+(setq dired-listing-switches "-lh")
+(setq ns-right-option-modifier 'control)
+(delete-selection-mode)
+(global-unset-key (kbd "C-z"))
+#+END_SRC
