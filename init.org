@@ -83,21 +83,24 @@
   #+END_SRC
 * Key bindings
 #+BEGIN_SRC emacs-lisp :tangle yes
-(defun C-c-commands (cmd-alist)
-  (dolist (pair cmd-alist)
-    (global-set-key (kbd (concat "C-c " (car pair)))
-		    (cdr pair))))
+  (defun C-c-commands (cmd-alist)
+    (dolist (pair cmd-alist)
+      (global-set-key (kbd (concat "C-c " (car pair)))
+  		    (cdr pair))))
 
-;; WARNING: now set other C-c command in use-package forms
-(C-c-commands
- '(("i" . find-init.org)
-   ("m" . woman)
-   ("q" . unfill-paragraph)
-   ("r" . replace-string)
-   ("s" . C-u_M-x_shell)))
+  ;; WARNING: now set other C-c command in use-package forms
+  (C-c-commands
+   '(("a" . aidermacs-transient-menu)
+     ("g" . magit-status)
+     ("i" . find-init.org)
+     ("l" . gptel-menu)
+     ("m" . woman)
+     ("q" . unfill-paragraph)
+     ("r" . replace-string)
+     ("s" . C-u_M-x_shell)))
 
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-unset-key (kbd "C-z"))
+  (global-set-key (kbd "C-x C-b") 'ibuffer)
+  (global-unset-key (kbd "C-z"))
 #+END_SRC
 
 * Theme
@@ -142,6 +145,37 @@
 (add-hook 'c++-mode-hook my-cc-mode-hook)
 #+END_SRC
 
+* LLM
+#+BEGIN_SRC emacs-lisp :tangle yes
+  (defun cborg-api-key ()
+    (with-temp-buffer
+      (insert-file-contents "~/.cborg-api-key")
+      (buffer-string)))
+
+  (use-package aidermacs
+    :config
+    (setenv "OPENAI_API_BASE" "https://api.cborg.lbl.gov")
+    (setenv "OPENAI_API_KEY" (cborg-api-key))
+    (setq aidermacs-default-chat-mode 'architect)
+    (setq aidermacs-default-model "openai/lbl/cborg-deepthought")
+    (setq aidermacs-editor-model "openai/lbl/cborg-coder")
+    (setq aidermacs-show-diff-after-change nil)
+    (add-to-list 'aidermacs-extra-args "--chat-language=en")
+    (add-to-list 'aidermacs-extra-args "--commit-language=en")
+    (add-to-list 'aidermacs-extra-args "--no-analytics")
+    (add-to-list 'aidermacs-extra-args "--no-show-model-warnings")
+    (add-to-list 'aidermacs-extra-args "--editor-edit-format=editor-diff"))
+
+  (use-package gptel
+    :config
+    (setq gptel-model 'openai/lbl/cborg-chat:latest)
+    (setq gptel-backend (gptel-make-openai "cborg"
+  			:key (cborg-api-key)
+  			:stream t
+  			:protocol "https"
+  			:host "api.cborg.lbl.gov"
+  			:models '(openai/lbl/cborg-chat:latest openai/lbl/cborg-coder:latest))))
+#+END_SRC
 * Divers
 #+BEGIN_SRC emacs-lisp :tangle yes
 (setq async-shell-command-display-buffer nil)
