@@ -1,88 +1,116 @@
 * Packages
 #+BEGIN_SRC emacs-lisp :tangle yes
-(require 'package)
-(add-to-list 'package-archives
-      	     '("melpa" . "https://melpa.org/packages/"))
+  (require 'package)
+  (add-to-list 'package-archives
+        	     '("melpa" . "https://melpa.org/packages/"))
 
-(use-package ivy
-  :config
-  (ivy-mode t)
-  (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) "))
+  (use-package ivy
+    :config
+    (ivy-mode t)
+    (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
+    (setq ivy-use-virtual-buffers t)
+    (setq ivy-count-format "(%d/%d) "))
 
-(use-package swiper
-  :config
+  (use-package swiper
+    :config
 
-  ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
-  (defun my-swiper-isearch-again ()
-    "Start swiper-isearch with the last thing searched for."
-    (interactive)
-    (swiper-isearch (car swiper-history)))
+    ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
+    (defun my-swiper-isearch-again ()
+      "Start swiper-isearch with the last thing searched for."
+      (interactive)
+      (swiper-isearch (car swiper-history)))
 
-  (global-set-key (kbd "C-s") 'swiper-isearch)
-  (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
+    (global-set-key (kbd "C-s") 'swiper-isearch)
+    (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
 
-(use-package magit
-  :config
-  (global-set-key (kbd "C-c g") 'magit-status)
+  (use-package magit
+    :config
+    (global-set-key (kbd "C-c g") 'magit-status)
 
-  (defun my-magit-auto-revert-mode-advice (orig-fun &rest args)
-    (unless (and buffer-file-name (file-remote-p buffer-file-name))
-      (apply orig-fun args)))
-  (advice-add 'magit-turn-on-auto-revert-mode-if-desired
-	      :around
-	      #'my-magit-auto-revert-mode-advice))
+    (defun my-magit-auto-revert-mode-advice (orig-fun &rest args)
+      (unless (and buffer-file-name (file-remote-p buffer-file-name))
+        (apply orig-fun args)))
+    (advice-add 'magit-turn-on-auto-revert-mode-if-desired
+  	      :around
+  	      #'my-magit-auto-revert-mode-advice))
 
 
-(use-package cmake-mode)
-(use-package csv-mode)
-(use-package markdown-mode)
-(use-package vlf)
-(use-package yaml-mode)
-(use-package auctex)
+  (use-package tex
+    :config
+    (setq TeX-view-program-list '(("evince" "evince %o" "evince")))
+    (add-to-list 'TeX-view-program-selection '(output-pdf "evince")))
 
+
+  (use-package cmake-mode)
+  (use-package csv-mode)
+  (use-package markdown-mode)
+  (use-package vlf)
+  (use-package yaml-mode)
+  (use-package auctex)
+  (use-package snakemake-mode)
+  (use-package yasnippet)
 #+END_SRC
 * Defuns
 
 #+BEGIN_SRC emacs-lisp :tangle yes
-  ;; Frequet ssh connections
-  (defun perlmutter ()
+    ;; Frequet ssh connections
+    (defun perlmutter ()
+      (interactive "")
+      (find-file "/ssh:perlmutter:"))
+    (defun lxplus ()
+      (interactive "")
+      (find-file "/ssh:lxplus:"))
+
+  (defun find-init.org ()
     (interactive "")
-    (find-file "/ssh:perlmutter:"))
-  (defun lxplus ()
+    (find-file "~/.emacs.d/init.org"))
+
+  ;; https://www.emacswiki.org/emacs/UnfillParagraph
+  ;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+  (defun unfill-paragraph (&optional region)
+    "Takes a multi-line paragraph and makes it into a single line of text."
+    (interactive (progn (barf-if-buffer-read-only) '(t)))
+    (let ((fill-column (point-max))
+  	;; This would override `fill-column' if it's an integer.
+  	(emacs-lisp-docstring-fill-column t))
+      (fill-paragraph nil region)))
+
+  (defun C-u_M-x_shell ()
+    "Command for prefixed invokation of `shell'"
     (interactive "")
-    (find-file "/ssh:lxplus:"))
+    (let ((ido-mode-p ido-mode))
+      (if ido-mode-p
+  	(ido-mode -1))
+      (let ((current-prefix-arg '(4)))
+        (call-interactively #'shell))
+      (if ido-mode-p
+  	(ido-mode t))))
 
-(defun find-init.org ()
-  (interactive "")
-  (find-file "~/.emacs.d/init.org"))
-
-;; https://www.emacswiki.org/emacs/UnfillParagraph
-;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
-(defun unfill-paragraph (&optional region)
-  "Takes a multi-line paragraph and makes it into a single line of text."
-  (interactive (progn (barf-if-buffer-read-only) '(t)))
-  (let ((fill-column (point-max))
-	;; This would override `fill-column' if it's an integer.
-	(emacs-lisp-docstring-fill-column t))
-    (fill-paragraph nil region)))
-
-(defun C-u_M-x_shell ()
-  "Command for prefixed invokation of `shell'"
-  (interactive "")
-  (let ((ido-mode-p ido-mode))
-    (if ido-mode-p
-	(ido-mode -1))
-    (let ((current-prefix-arg '(4)))
-      (call-interactively #'shell))
-    (if ido-mode-p
-	(ido-mode t))))
-
-  
+    
+  (defun yank-into-cache ()
+    "Yank the current kill into *yank-cache* without switching to it."
+    (interactive)
+    (let ((beginning (if (region-active-p)
+  		       (region-beginning)
+  		     (line-beginning-position)))
+  	(end (if (region-active-p)
+  		 (region-end)
+  	       (line-end-position))))
+      (kill-ring-save beginning end))
+    (with-current-buffer (get-buffer-create "*yank-cache*")
+      (goto-char (point-max))
+      (yank)
+      (insert "\n")))
   #+END_SRC
 * Key bindings
 #+BEGIN_SRC emacs-lisp :tangle yes
+  (define-prefix-command 'my-llm-map)
+  (define-key my-llm-map (kbd "a") 'aidermacs-transient-menu)
+  (define-key my-llm-map (kbd "l") 'gptel)
+  (define-key my-llm-map (kbd "m") 'gptel-menu)
+  (define-key my-llm-map (kbd "r") 'gptel-rewrite)
+  (define-key my-llm-map (kbd "s") 'gptel-send)
+
   (defun C-c-commands (cmd-alist)
     (dolist (pair cmd-alist)
       (global-set-key (kbd (concat "C-c " (car pair)))
@@ -90,17 +118,21 @@
 
   ;; WARNING: now set other C-c command in use-package forms
   (C-c-commands
-   '(("a" . aidermacs-transient-menu)
+   '(("a" . org-agenda)
+     ("c" . org-capture)
+     ("d" . deft)
      ("g" . magit-status)
      ("i" . find-init.org)
-     ("l" . gptel-menu)
+     ("l" . my-llm-map)
      ("m" . woman)
      ("q" . unfill-paragraph)
      ("r" . replace-string)
-     ("s" . C-u_M-x_shell)))
+     ("s" . C-u_M-x_shell)
+     ("y" . yank-into-cache)))
 
   (global-set-key (kbd "C-x C-b") 'ibuffer)
   (global-unset-key (kbd "C-z"))
+  (global-unset-key (kbd "C-x C-z"))
 #+END_SRC
 
 * Theme
@@ -123,26 +155,37 @@
 #+END_SRC
 * Programming
 #+BEGIN_SRC emacs-lisp :tangle yes
-(setq common-programming-hook
-      (lambda ()
-      	(setq display-line-numbers t)
-      	(column-number-mode)
-      	(show-paren-mode)))
+  (setq common-programming-hook
+        (lambda ()
+        	(setq display-line-numbers t)
+        	(column-number-mode)
+        	(show-paren-mode)))
 
-(add-hook 'python-mode-hook common-programming-hook)
-(add-hook 'emacs-lisp-mode-hook common-programming-hook)
-(add-hook 'sh-mode-hook common-programming-hook)
-(add-hook 'rust-mode-hook common-programming-hook)
-(add-hook 'c-mode-hook common-programming-hook)
-(add-hook 'c++-mode-hook common-programming-hook)
+  (add-hook 'python-mode-hook common-programming-hook)
+  (add-hook 'emacs-lisp-mode-hook common-programming-hook)
+  (add-hook 'sh-mode-hook common-programming-hook)
+  (add-hook 'rust-mode-hook common-programming-hook)
+  (add-hook 'c-mode-hook common-programming-hook)
+  (add-hook 'c++-mode-hook common-programming-hook)
 
-(setq c-default-style '((c++-mode . "stroustrup")
-    			(other . "linux")))
-(setq c-basic-offset 4)
-(add-to-list 'auto-mode-alist '("\\.ipp\\'" . c++-mode))
+  (setq c-default-style '((c++-mode . "stroustrup")
+      			(other . "linux")))
+  (setq c-basic-offset 4)
+  (add-to-list 'auto-mode-alist '("\\.ipp\\'" . c++-mode))
 
-(setq my-cc-mode-hook (lambda () (c-set-offset 'innamespace 0)))
-(add-hook 'c++-mode-hook my-cc-mode-hook)
+  (setq my-cc-mode-hook (lambda () (c-set-offset 'innamespace 0)))
+  (add-hook 'c++-mode-hook my-cc-mode-hook)
+
+
+  (add-hook 'typst-ts-mode-hook common-programming-hook)
+  (setq my-typst-ts-mode-hook (lambda () (electric-pair-local-mode)))
+  (add-hook 'typst-ts-mode-hook my-typst-ts-mode-hook)
+
+
+  (setq my-eglot-hook (lambda ()
+  			(eglot-inlay-hints-mode 0)
+  			(setq flymake-no-changes-timeout nil)))
+  (add-hook 'eglot-managed-mode-hook my-eglot-hook)
 #+END_SRC
 
 * LLM
@@ -156,15 +199,15 @@
     :config
     (setenv "OPENAI_API_BASE" "https://api.cborg.lbl.gov")
     (setenv "OPENAI_API_KEY" (cborg-api-key))
-    (setq aidermacs-default-chat-mode 'architect)
-    (setq aidermacs-default-model "openai/lbl/cborg-deepthought")
+    ;; (setq aidermacs-default-chat-mode 'architect)
+    (setq aidermacs-default-model "openai/lbl/cborg-coder")
     (setq aidermacs-editor-model "openai/lbl/cborg-coder")
     (setq aidermacs-show-diff-after-change nil)
     (add-to-list 'aidermacs-extra-args "--chat-language=en")
     (add-to-list 'aidermacs-extra-args "--commit-language=en")
     (add-to-list 'aidermacs-extra-args "--no-analytics")
     (add-to-list 'aidermacs-extra-args "--no-show-model-warnings")
-    (add-to-list 'aidermacs-extra-args "--editor-edit-format=editor-diff"))
+    (add-to-list 'aidermacs-extra-args "--edit-format=whole"))
 
   (use-package gptel
     :config
@@ -174,54 +217,146 @@
   			:stream t
   			:protocol "https"
   			:host "api.cborg.lbl.gov"
-  			:models '(openai/lbl/cborg-chat:latest openai/lbl/cborg-coder:latest))))
+  			:models '(lbl/cborg-chat:latest
+  				  lbl/cborg-coder:latest
+  				  lbl/cborg-deepthought:latest
+  				  openai/Llama-4-Scout-17B-16E-Instruct
+  				  anthropic/claude-sonnet:latest))))
+#+END_SRC
+* Org
+#+BEGIN_SRC emacs-lisp :tangle yes
+  (use-package org-roam
+    :after org
+    :demand t
+    :config
+    (setq org-roam-directory (concat (getenv "HOME") "/Documents/org-roam/"))
+    (setq org-roam-dailies-capture-templates
+          '(("d" "default" entry
+             "* %?"
+             :target (file+head "%<%Y-%m-%d>.org"
+                                "#+title: %<%Y-%m-%d>\n"))))
+    (org-roam-db-autosync-mode)
+    :bind
+    ("C-c n n" . org-roam-capture)
+    ("C-c n f" . org-roam-node-find)
+    ("C-c n d" . org-roam-dailies-goto-today))
+
+
+  (use-package deft
+    :after org
+    :config
+    (setq deft-directory org-roam-directory)
+    (setq deft-default-extension "org")
+    (defun my-org-get-title (file contents)
+        (org-get-title file))
+    (advice-add 'deft-parse-title :before-until 'my-org-get-title)
+    (setq deft-strip-summary-regexp "\\([
+    	]\\|^#\\+[[:upper:]_]+:.*$:\\|^:[[:upper:]]+:.*$\\|^#\\+[[:lower:]]+:.*$\\)"))
+
+  (use-package org-tempo)
+
+  (setq my-notes-dir (concat (getenv "HOME") "/Documents/org-roam/"))
+  (setq my-todo-file (concat (getenv "HOME") "/Documents/todo.org"))
+  ;; (setq org-agenda-files (list my-todo-file my-notes-dir))
+  (setq org-agenda-files (list my-todo-file))
+
+
+  (setq org-capture-templates
+        '(("t" "Todo" entry (file+headline my-todo-file "INBOX")
+           "* TODO %?\n%u")))
+
+  (setq org-todo-keywords '((sequence "TODO(t!)"           ; ready to be started
+  				    "STARTED(s!)"        ; in progress
+  				    "WAITING(w@)"        ; waiting for completion
+  				    "BLOCKED(b@)"        ; blocked by other task / external dependancy
+  				    "|"
+  				    "DONE(d!)"           ; finished
+  				    "DELEGATED(l@)"      ; deletaged
+  				    "SOMEDAY(o!)"        ; possibly in future
+  				    "OUT(u@)"            ; tracked elsewhere
+  				    "CANCELLED(c!)")))   ; not gonna do it
+
+
+  (setq org-todo-keyword-faces
+        '(("STARTED" . (:foreground "blue" :weight bold))
+  	("BLOCKED" . (:foreground "white" :background "red"))))
+
+
+  (add-hook 'org-agenda-mode-hook
+            (lambda () (hl-line-mode)))
+
+  (setq org-agenda-start-on-weekday nil) ;; Always start today
+  (setq org-deadline-warning-days 7)
+  (setq org-agenda-sorting-strategy
+        '(todo-state-down priority-down))
+
+  (defun my-days-to-sunday()
+    (let ((dayspan 0)
+          (today (string-to-number (format-time-string "%u"))))
+      (cond
+        ((> today 0)
+          ; from today till sunday, today included
+          (setq dayspan (- 8 today))) 
+        ((= today 0)
+          ; sunday to sunday
+         (setq dayspan 8)))))
+
+  (setq org-agenda-custom-commands
+        '(("n" "Agenda and all TODOs"
+  	 ((agenda "" ((org-agenda-overriding-header "This Week")
+  		      (org-agenda-start-on-weekday nil)
+  		      (org-agenda-span (my-days-to-sunday))))
+  	  (tags-todo (format "SCHEDULED>=\"<+%dd>\"" (my-days-to-sunday))
+  		     ((org-agenda-overriding-header "Future")))
+  	  (todo "" ((org-agenda-overriding-header "Unscheduled")
+                      (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))))))
 #+END_SRC
 * Divers
 #+BEGIN_SRC emacs-lisp :tangle yes
-(setq async-shell-command-display-buffer nil)
-(setq comint-input-ignoredups t)
-(setq comint-password-prompt-regexp
-      (concat comint-password-prompt-regexp "\\|pass phrase\\|the password\\+OTP\\|Password"))
-(setq compilation-scroll-output t)
-(setq confirm-kill-processes nil)
-(setq custom-file "~/.emacs.d/custom.el")
+  (setq async-shell-command-display-buffer nil)
+  (setq comint-input-ignoredups t)
+  (setq comint-password-prompt-regexp
+        (concat comint-password-prompt-regexp "\\|pass phrase\\|the password\\+OTP\\|Password"))
+  (setq compilation-scroll-output t)
+  (setq confirm-kill-processes nil)
+  (setq custom-file "~/.emacs.d/custom.el")
 
-(add-to-list 'backup-directory-alist '("." . "/Users/gagnonlg/.emacs.d/backup"))
-(setq delete-old-versions t)
-(setq kept-new-versions 3)
-(setq kept-old-versions 0)
-(setq make-backup-files t)
+  (add-to-list 'backup-directory-alist '("." . "/Users/gagnonlg/.emacs.d/backup"))
+  (setq delete-old-versions t)
+  (setq kept-new-versions 3)
+  (setq kept-old-versions 0)
+  (setq make-backup-files t)
 
-(setq dired-listing-switches "-lh")
-(setq doc-view-resolution 300) ; default is 100
-(setq highlight-nonselected-windows t)
+  (setq dired-listing-switches "-lh")
+  (setq doc-view-resolution 300) ; default is 100
+  (setq highlight-nonselected-windows t)
 
-(setq ring-bell-function
-      (lambda ()
-      	(invert-face 'mode-line)
-      	(run-with-timer 0.1 nil 'invert-face 'mode-line)))
+  (setq ring-bell-function
+        (lambda ()
+        	(invert-face 'mode-line)
+        	(run-with-timer 0.1 nil 'invert-face 'mode-line)))
 
-(setq search-default-mode t) ;; sets regexp search
-(setq version-control t)
+  (setq search-default-mode t) ;; sets regexp search
+  (setq version-control t)
 
-(add-hook 'compilation-minor-mode-hook
-  	  (lambda () (hl-line-mode)))
+  (add-hook 'compilation-minor-mode-hook
+    	  (lambda () (hl-line-mode)))
 
-(setq ns-right-option-modifier 'control)
-(delete-selection-mode)
-(display-battery-mode t)
-(display-time-mode t)
-(remove-hook 'find-file-hook 'vc-find-file-hook)
-(put 'set-goal-column 'disabled nil)
-(show-paren-mode t)
-(size-indication-mode)
+  (setq ns-right-option-modifier 'control)
+  (delete-selection-mode)
+  (display-battery-mode t)
+  (display-time-mode t)
+  (remove-hook 'find-file-hook 'vc-find-file-hook)
+  (put 'set-goal-column 'disabled nil)
+  (show-paren-mode t)
+  (size-indication-mode)
 
-;; Speedup TRAMP over slow connections
-(setq vc-follow-symlinks nil)
-(defun my-vc-off-if-remote ()
-  (if (file-remote-p (buffer-file-name))
-      (setq-local vc-handled-backends nil)))
-(add-hook 'find-file-hook 'my-vc-off-if-remote)
-;; this inhibits .#<...> lock files
-(setq remote-file-name-inhibit-locks t)
+  ;; Speedup TRAMP over slow connections
+  (setq vc-follow-symlinks nil)
+  (defun my-vc-off-if-remote ()
+    (if (file-remote-p (buffer-file-name))
+        (setq-local vc-handled-backends nil)))
+  (add-hook 'find-file-hook 'my-vc-off-if-remote)
+  ;; this inhibits .#<...> lock files
+  (setq remote-file-name-inhibit-locks t)
 #+END_SRC
