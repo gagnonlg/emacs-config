@@ -4,24 +4,25 @@
 (add-to-list 'package-archives
       	     '("melpa" . "https://melpa.org/packages/"))
 
-(use-package ivy
-  :config
-  (ivy-mode t)
-  (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) "))
+(use-package vertico
+  :init
+  (vertico-mode))
 
-(use-package swiper
-  :config
+(use-package marginalia
+  :init
+  (marginalia-mode))
 
-  ;; https://emacs.stackexchange.com/questions/55775/how-can-i-resume-swiper-isearch-with-the-next-line-selected
-  (defun my-swiper-isearch-again ()
-    "Start swiper-isearch with the last thing searched for."
-    (interactive)
-    (swiper-isearch (car swiper-history)))
+(use-package consult
+  :ensure t
+  :bind (("C-s" . consult-line)     ;; Swiper replacement!
+         ("C-x b" . consult-buffer)
+         ("M-y" . consult-yank-pop)))
 
-  (global-set-key (kbd "C-s") 'swiper-isearch)
-  (global-set-key (kbd "C-M-s") 'my-swiper-isearch-again))
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
 
 (use-package magit
   :config
