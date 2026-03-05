@@ -222,14 +222,11 @@
   (setenv "OPENAI_API_BASE" "https://api.cborg.lbl.gov")
   (setenv "OPENAI_API_KEY" (cborg-api-key))
   ;; (setq aidermacs-default-chat-mode 'architect)
-  (setq aidermacs-default-model "openai/lbl/cborg-coder")
-  (setq aidermacs-editor-model "openai/lbl/cborg-coder")
-  (setq aidermacs-show-diff-after-change nil)
+  (setq aidermacs-default-model "hosted_vllm/gpt-oss-120b")
   (add-to-list 'aidermacs-extra-args "--chat-language=en")
   (add-to-list 'aidermacs-extra-args "--commit-language=en")
   (add-to-list 'aidermacs-extra-args "--no-analytics")
-  (add-to-list 'aidermacs-extra-args "--no-show-model-warnings")
-  (add-to-list 'aidermacs-extra-args "--edit-format=whole"))
+  (add-to-list 'aidermacs-extra-args "--no-show-model-warnings"))
 
 (use-package gptel
   :config
@@ -239,12 +236,8 @@
 			:stream t
 			:protocol "https"
 			:host "api.cborg.lbl.gov"
-			:models '(lbl/cborg-deepthought:latest
-				  lbl/cborg-chat:latest
-				  lbl/cborg-coder:latest
-				  openai/Llama-4-Scout-17B-16E-Instruct
-				  anthropic/claude-sonnet:latest
-				  anthropic/claude-opus))))
+			:models '(hosted_vllm/gpt-oss-120b
+				  claude-sonnet))))
 #+END_SRC
 * Org
 #+BEGIN_SRC emacs-lisp :tangle yes
