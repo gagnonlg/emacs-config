@@ -10,13 +10,38 @@
 
 (use-package marginalia
   :init
-  (marginalia-mode))
+  (marginalia-mode)
+  :config
+  ;; Prevent unwanted TRAMP reconnection attempts
+  (defun my/marginalia-buffer-file-no-tramp (orig buffer)
+    "Annotate BUFFER without letting a remote path trigger a Tramp connection."
+    (let ((file-name-handler-alist nil))
+      (funcall orig buffer)))
+  (advice-add 'marginalia--buffer-file :around #'my/marginalia-buffer-file-no-tramp))
 
 (use-package consult
   :ensure t
   :bind (("C-s" . consult-line)     ;; Swiper replacement!
          ("C-x b" . consult-buffer)
-         ("M-y" . consult-yank-pop)))
+         ("M-y" . consult-yank-pop))
+  :config
+  ;; Prevent TRAMP lag when calling consult-buffer from a remote buffer
+  (setq consult-project-function
+        (lambda (arg)
+          (unless (file-remote-p default-directory)
+            (consult--default-project-function arg)))))
+
+
+(defun my/ibuffer-abbreviate-file-name-no-tramp (orig filename)
+  "Keep ibuffer's filename column from forcing a Tramp reconnect."
+  (if (file-remote-p default-directory)
+      (let ((file-name-handler-alist nil))
+        (funcall orig filename))
+    (funcall orig filename)))
+
+(advice-add 'ibuffer--abbreviate-file-name :around
+            #'my/ibuffer-abbreviate-file-name-no-tramp)
+
 
 (use-package orderless
   :ensure t
@@ -27,7 +52,7 @@
 (use-package magit
   :config
   (global-set-key (kbd "C-c g") 'magit-status)
-
+  (setq magit-save-repository-buffers nil)
   (defun my-magit-auto-revert-mode-advice (orig-fun &rest args)
     (unless (and buffer-file-name (file-remote-p buffer-file-name))
       (apply orig-fun args)))
@@ -41,6 +66,13 @@
   (setq TeX-view-program-list '(("evince" "evince %o" "evince")))
   (add-to-list 'TeX-view-program-selection '(output-pdf "evince")))
 
+
+(use-package clang-format
+  :ensure t
+  :config
+  (setq clang-format-style "LLVM")
+  :bind (:map c++-mode-map
+              ("C-c f" . clang-format-buffer)))
 
 (use-package cmake-mode)
 (use-package csv-mode)
@@ -62,6 +94,9 @@
 (defun lxplus ()
   (interactive "")
   (find-file "/ssh:lxplus:"))
+(defun sherlock ()
+  (interactive "")
+  (find-file "/ssh:sherlock:"))
 
 (defun find-init.org ()
   (interactive "")
@@ -69,13 +104,13 @@
 
 ;; https://www.emacswiki.org/emacs/UnfillParagraph
 ;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
-(defun unfill-paragraph (&optional region)
-  "Takes a multi-line paragraph and makes it into a single line of text."
-  (interactive (progn (barf-if-buffer-read-only) '(t)))
-  (let ((fill-column (point-max))
-	;; This would override `fill-column' if it's an integer.
-	(emacs-lisp-docstring-fill-column t))
-    (fill-paragraph nil region)))
+;; (defun unfill-paragraph (&optional region)
+;;   "Takes a multi-line paragraph and makes it into a single line of text."
+;;   (interactive (progn (barf-if-buffer-read-only) '(t)))
+;;   (let ((fill-column (point-max))
+;; 	;; This would override `fill-column' if it's an integer.
+;; 	(emacs-lisp-docstring-fill-column t))
+;;     (fill-paragraph nil region)))
 
 (defun C-u_M-x_shell ()
   "Command for prefixed invokation of `shell'"
@@ -113,6 +148,7 @@
 (define-key my-llm-map (kbd "m") 'gptel-menu)
 (define-key my-llm-map (kbd "r") 'gptel-rewrite)
 (define-key my-llm-map (kbd "s") 'gptel-send)
+(define-key my-llm-map (kbd "w") 'claude-workspace-send)
 
 (defun C-c-commands (cmd-alist)
   (dolist (pair cmd-alist)
@@ -128,12 +164,14 @@
    ("i" . find-init.org)
    ("l" . my-llm-map)
    ("m" . woman)
-   ("q" . unfill-paragraph)
+   ;; ("q" . unfill-paragraph)
    ("r" . replace-string)
    ("s" . C-u_M-x_shell)
    ("y" . yank-into-cache)))
 
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key (kbd "M-q") #'unfill-toggle)
+
 (global-unset-key (kbd "C-z"))
 (global-unset-key (kbd "C-x C-z"))
 #+END_SRC
@@ -237,8 +275,29 @@
 			:stream t
 			:protocol "https"
 			:host "api.cborg.lbl.gov"
-			:models '(hosted_vllm/gpt-oss-120b
-				  claude-sonnet))))
+			:models '(lbl/gemma-4-thinking))))
+#+END_SRC
+* Claude
+#+BEGIN_SRC emacs-lisp :tangle yes
+;; TODO support multiple workspaces
+(setq claude-workspace-default-session "claude-workspace")
+(defun claude-workspace-send ()
+  "Send region/buffer to Claude running in tmux session 'claude'."
+  (interactive)
+  (let ((session-name claude-workspace-default-session)
+	(text (if (use-region-p)
+                  (buffer-substring-no-properties (region-beginning)
+						  (region-end))
+                (buffer-string))))
+    ;; -l sends text literally; then send Enter separately
+    (call-process "tmux" nil nil nil "send-keys" "-t" session-name "-l" text)
+    (call-process "tmux" nil nil nil "send-keys" "-t" session-name "Enter")))
+
+(defun claude-workspace-capture ()
+  (interactive)
+  (let ((session-name claude-workspace-default-session))
+    (call-process "tmux" nil t nil "capture-pane" "-p" "-t" session-name)))
+
 #+END_SRC
 * Org
 #+BEGIN_SRC emacs-lisp :tangle yes
@@ -329,6 +388,24 @@
                     (org-agenda-skip-function '(org-agenda-skip-entry-if 'scheduled))))))))
 
 (setq org-edit-src-content-indentation 0)
+
+;; Change text appearance for checked items when using org checklists
+;; 1. Define how you want the text to look
+(defface my-org-checked-item
+  '((t (:inherit org-headline-done :strike-through t)))
+  "Face for the text of a checked Org mode checkbox.")
+;; 2. Tell org-mode to look for checked boxes and apply the face
+(font-lock-add-keywords
+ 'org-mode
+ `(("^[ \t]*\\(?:[-+*]\\|[0-9]+[.)]\\)[ \t]+\\[[Xx]\\][ \t]+\\(.*\\)$"
+    1 'my-org-checked-item prepend))
+ 'append)
+;; 3. Ensure the font updates immediately when you press C-c C-c
+(advice-add 'org-toggle-checkbox :after (lambda (&rest _) (font-lock-flush)))
+
+
+
+
 #+END_SRC
 * Divers
 #+BEGIN_SRC emacs-lisp :tangle yes
@@ -395,4 +472,8 @@
                   (calendar-absolute-from-gregorian (list month day year)))))
 	'font-lock-face 'font-lock-warning-face))
 
+#+END_SRC
+* Footer
+#+BEGIN_SRC emacs-lisp :tangle yes
+(message "INIT DONE")
 #+END_SRC
