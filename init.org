@@ -269,7 +269,7 @@
 
 (use-package gptel
   :config
-  (setq gptel-model 'lbl/cborg-deepthought:latest)
+  (setq gptel-model 'lbl/gemma-4-thinking)
   (setq gptel-backend (gptel-make-openai "cborg"
 			:key (cborg-api-key)
 			:stream t
