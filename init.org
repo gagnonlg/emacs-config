@@ -192,7 +192,9 @@
 	    (lambda ()
 	      ;; (set-frame-font (font-spec :size 27 :name "Inconsolata" :weight 'medium) nil t)
 	      (set-frame-font (font-spec :size 20 :name "Inconsolata") nil t)
-	      (set-fontset-font "fontset-default" 'unicode (font-spec :size 13 :name "Source Code Pro")))))
+	      (set-fontset-font "fontset-default" 'unicode (font-spec :size 13 :name "Source Code Pro"))
+	      (set-fontset-font t 'emoji
+				(font-spec :family "Apple Color Emoji") nil 'prepend))))
 #+END_SRC
 * Programming
 #+BEGIN_SRC emacs-lisp :tangle yes
