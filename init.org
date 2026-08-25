@@ -365,8 +365,9 @@
 
 (setq org-agenda-start-on-weekday nil) ;; Always start today
 (setq org-deadline-warning-days 7)
-(setq org-agenda-sorting-strategy
-      '(todo-state-down priority-down))
+;; (setq org-agenda-sorting-strategy
+;;       '(todo-state-down priority-down))
+(setq org-agenda-sorting-strategy '(priority-down category-up todo-state-up))
 
 (defun my-days-to-sunday()
   (let ((dayspan 0)
