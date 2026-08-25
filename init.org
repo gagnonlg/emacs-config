@@ -1,3 +1,6 @@
+#+begin_src emacs-lisp :tangle yes
+;;; init.el --- -*- lexical-binding: t; -*-
+#+end_src
 * Packages
 #+BEGIN_SRC emacs-lisp :tangle yes
 (require 'package)
