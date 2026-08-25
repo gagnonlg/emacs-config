@@ -71,7 +71,36 @@
   (setq TeX-source-correlate-mode t)
   (setq TeX-source-correlate-start-server t)
   (setq TeX-source-correlate-method 'synctex)
-  (setq TeX-command-extra-options "-synctex=1"))
+  (setq TeX-command-extra-options "-synctex=1")
+
+
+  (defun my-TeX-run-make (name command _file)
+    "Run make in the project root, ensuring AUCTeX parses paths and logs correctly."
+    (let* ((proj-dir (expand-file-name
+		      (or (locate-dominating-file default-directory "Makefile")
+			  default-directory)))
+	   ;; 1. Use AUCTeX's native function to get the master file name
+	   ;; 2. Strip any extension just to be absolutely safe
+	   (master-base (file-name-sans-extension (file-name-nondirectory (TeX-master-file))))
+	   ;; Create the absolute path WITHOUT the extension (e.g., /path/to/project/main)
+	   (abs-master-base (expand-file-name master-base proj-dir)))
+    
+      ;; Set TeX-master to the absolute path WITH the .tex extension
+      (setq-local TeX-master (concat abs-master-base ".tex"))
+    
+      ;; Run the command from the project root, passing the path WITHOUT the extension.
+      ;; AUCTeX will now correctly look for /path/to/project/main.log
+      (let ((default-directory proj-dir))
+	;; (message "****** DEFAULT-DIRECTORY FOR TeX-run-TeX IS: %s" default-directory)
+	(TeX-run-TeX name command abs-master-base))))
+
+
+  (add-to-list 'TeX-command-list
+	       '("Make"
+		 "make"
+		 my-TeX-run-make nil t
+		 :help "Run make from the project root"))
+)
 
 
 (use-package clang-format
@@ -483,7 +512,7 @@
 	'font-lock-face 'font-lock-warning-face))
 
 ;; Man pages for homebrew packages
-(add-to-list 'woman-manpath "/opt/homebrew/share/man")
+;; (add-to-list 'woman-manpath "/opt/homebrew/share/man")
 
 #+END_SRC
 * Footer
