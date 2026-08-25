@@ -62,9 +62,13 @@
 
 
 (use-package tex
+  :ensure auctex
   :config
-  (setq TeX-view-program-list '(("evince" "evince %o" "evince")))
-  (add-to-list 'TeX-view-program-selection '(output-pdf "evince")))
+  (setq TeX-view-program-selection '((output-pdf "Skim")))
+  (setq TeX-source-correlate-mode t)
+  (setq TeX-source-correlate-start-server t)
+  (setq TeX-source-correlate-method 'synctex)
+  (setq TeX-command-extra-options "-synctex=1"))
 
 
 (use-package clang-format
