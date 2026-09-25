@@ -299,7 +299,7 @@
   (setenv "OPENAI_API_BASE" "https://api.cborg.lbl.gov")
   (setenv "OPENAI_API_KEY" (cborg-api-key))
   ;; (setq aidermacs-default-chat-mode 'architect)
-  (setq aidermacs-default-model "hosted_vllm/gpt-oss-120b")
+  (setq aidermacs-default-model "lbl/gemma-4-thinking")
   (add-to-list 'aidermacs-extra-args "--chat-language=en")
   (add-to-list 'aidermacs-extra-args "--commit-language=en")
   (add-to-list 'aidermacs-extra-args "--no-analytics")
