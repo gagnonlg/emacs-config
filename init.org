@@ -512,8 +512,9 @@
 	'font-lock-face 'font-lock-warning-face))
 
 ;; Man pages for homebrew packages
-;; (add-to-list 'woman-manpath "/opt/homebrew/share/man")
-
+(use-package woman
+  :config
+  (add-to-list 'woman-manpath "/opt/homebrew/share/man"))
 #+END_SRC
 * Footer
 #+BEGIN_SRC emacs-lisp :tangle yes
