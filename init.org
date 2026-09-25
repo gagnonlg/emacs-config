@@ -110,6 +110,10 @@
   :bind (:map c++-mode-map
               ("C-c f" . clang-format-buffer)))
 
+(use-package persistent-scratch
+  :config
+  (persistent-scratch-setup-default))
+
 (use-package cmake-mode)
 (use-package csv-mode)
 (use-package markdown-mode)
